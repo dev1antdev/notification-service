@@ -1,0 +1,62 @@
+services:
+  database:
+    image: postgres:16
+    container_name: notification-service-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      - 5433:5432
+    volumes:
+      - database_data:/var/lib/postgresql/data:rw
+
+  app:
+    container_name: notification-service-app
+    user: "${UID:-1000}:${GID:-1000}"
+    build:
+      context: ./
+      target: dev
+    depends_on:
+      - database
+      - cache
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-http://localhost}, app:80
+      MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-^${SERVER_NAME:-nbonnici\.info|localhost}|php$$}
+      DATABASE_URL: postgresql://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-!ChangeMe!}@database:5432/${DATABASE_NAME:-app}?serverVersion=${DATABASE_VERSION:-16}&charset=${DATABASE_CHARSET:-utf8}
+      MERCURE_URL: ${CADDY_MERCURE_URL:-http://php/.well-known/mercure}
+      MERCURE_PUBLIC_URL: ${CADDY_MERCURE_PUBLIC_URL:-http://${SERVER_NAME:-localhost}/.well-known/mercure}
+      MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+    ports:
+      - target: 80
+        published: ${HTTP_PORT:-80}
+        protocol: tcp
+      - target: 443
+        published: ${HTTPS_PORT:-443}
+        protocol: tcp
+      - target: 443
+        published: ${HTTP3_PORT:-443}
+        protocol: udp
+    volumes:
+      - ./:/app
+      - ./docker/frankenphp/Caddyfile:/etc/caddy/Caddyfile:ro
+    tty: true
+
+  cache:
+    image: redis:latest
+    container_name: notification-service-cache
+    restart: unless-stopped
+
+networks:
+  default:
+    external: false
+    name: proxies
+
+volumes:
+  database_data:
+  caddy_data:
+  caddy_config:
