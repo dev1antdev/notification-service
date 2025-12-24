@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\Notification\ValueObject;
+namespace App\Domain\Shared\Notification;
 
 use App\Domain\Shared\Exception\InvariantViolation;
 

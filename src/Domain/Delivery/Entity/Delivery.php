@@ -14,6 +14,7 @@ use App\Domain\Delivery\Event\DeliveryRetryScheduled;
 use App\Domain\Delivery\Event\DeliverySucceeded;
 use App\Domain\Delivery\ValueObject\AttemptId;
 use App\Domain\Delivery\ValueObject\DeliveryId;
+use App\Domain\Delivery\ValueObject\Destination\DestinationInterface;
 use App\Domain\Delivery\ValueObject\ErrorInfo;
 use App\Domain\Delivery\ValueObject\ProviderMessageId;
 use App\Domain\Delivery\ValueObject\ProviderName;
@@ -40,6 +41,7 @@ final class Delivery extends AggregateRoot
         private readonly AbstractId $notificationId,
         private readonly Channel $channel,
         private ProviderName $provider,
+        private DestinationInterface $destination,
         private readonly CorrelationId $correlationId,
         private readonly Instant $createdAt,
     ) {
@@ -53,6 +55,7 @@ final class Delivery extends AggregateRoot
         AbstractId $notificationId,
         Channel $channel,
         ProviderName $provider,
+        DestinationInterface $destination,
         CorrelationId $correlationId,
         Instant $now,
     ): self {
@@ -61,6 +64,7 @@ final class Delivery extends AggregateRoot
             $notificationId,
             $channel,
             $provider,
+            $destination,
             $correlationId,
             $now,
         );

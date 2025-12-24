@@ -6,6 +6,7 @@ namespace App\Domain\Notification\ValueObject;
 
 use App\Domain\Shared\Exception\InvariantViolation;
 use App\Domain\Shared\Notification\Channel;
+use App\Domain\Shared\Notification\PushTarget;
 
 final readonly class Recipient
 {
