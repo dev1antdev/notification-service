@@ -32,7 +32,7 @@ RUN set -eux; \
     ;
 
 COPY --link docker/frankenphp/conf.d/app.ini $PHP_INI_DIR/conf.d/
-COPY --link --chmod=755 entrypoint.sh /usr/local/bin/docker-entrypoint
+COPY --link --chmod=755 ./entrypoint.sh /usr/local/bin/docker-entrypoint
 COPY --link docker/frankenphp/Caddyfile /etc/caddy/Caddyfile
 
 ENTRYPOINT ["docker-entrypoint"]
