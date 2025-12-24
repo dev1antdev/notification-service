@@ -4,22 +4,26 @@ declare(strict_types=1);
 
 namespace App\Domain\Shared\Time;
 
+use App\Domain\Shared\Exception\InvariantViolation;
+use DateTimeImmutable;
+use DateTimeZone;
+
 final class Instant
 {
     private const string TZ_UTC = 'UTC';
 
     private function __construct(
-        private readonly \DateTimeImmutable $value,
+        private readonly DateTimeImmutable $value,
     ) {}
 
     public static function now(): self
     {
-        return new self(new \DateTimeImmutable('now', new \DateTimeZone(self::TZ_UTC)));
+        return new self(new DateTimeImmutable('now', new DateTimeZone(self::TZ_UTC)));
     }
 
-    public static function fromDateTime(\DateTimeImmutable $dt): self
+    public static function fromDateTime(DateTimeImmutable $dt): self
     {
-        $utc = $dt->setTimezone(new \DateTimeZone(self::TZ_UTC));
+        $utc = $dt->setTimezone(new DateTimeZone(self::TZ_UTC));
 
         return new self($utc);
     }
@@ -27,7 +31,7 @@ final class Instant
     public static function fromString(string $value): self
     {
         try {
-            $datetime = new \DateTimeImmutable($value);
+            $datetime = new DateTimeImmutable($value);
         } catch (\Throwable) {
             throw InvariantViolation::because("Invalid instant format: {$value}");
         }
@@ -68,7 +72,7 @@ final class Instant
         return $this->toUnixMillis() === $other->toUnixMillis();
     }
 
-    public function dateTime(): \DateTimeImmutable
+    public function dateTime(): DateTimeImmutable
     {
         return $this->value;
     }

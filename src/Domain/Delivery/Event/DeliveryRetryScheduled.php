@@ -1,0 +1,46 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Delivery\Event;
+
+use App\Domain\Delivery\ValueObject\DeliveryId;
+use App\Domain\Delivery\ValueObject\ProviderName;
+use App\Domain\Delivery\ValueObject\RetryPlan;
+use App\Domain\Shared\Event\AbstractDomainEvent;
+use App\Domain\Shared\Identity\CorrelationId;
+use App\Domain\Shared\Notification\Channel;
+use App\Domain\Shared\Time\Instant;
+use Symfony\Component\Uid\AbstractUid;
+
+final readonly class DeliveryRetryScheduled extends AbstractDomainEvent
+{
+    public function __construct(
+        string $eventId,
+        Instant $occurredAt,
+        ?CorrelationId $correlationId,
+        private DeliveryId $deliveryId,
+        private AbstractUid $notificationId,
+        private Channel $channel,
+        private ProviderName $provider,
+        private RetryPlan $retryPlan,
+    ) {
+        parent::__construct($eventId, $occurredAt, $correlationId);
+    }
+
+    public static function eventName(): string
+    {
+        return 'delivery.retry_scheduled';
+    }
+
+    public function payload(): array
+    {
+        return [
+            'deliveryId' => $this->deliveryId->toString(),
+            'notificationId' => $this->notificationId->toString(),
+            'channel' => $this->channel->value,
+            'provider' => $this->provider->value(),
+            'retryPlan' => $this->retryPlan->toArray(),
+        ];
+    }
+}
