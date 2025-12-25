@@ -6,36 +6,63 @@ namespace App\Domain\Shared\Notification;
 
 use App\Domain\Shared\Exception\InvariantViolation;
 
-enum Channel: string
+final readonly class Channel
 {
-    case EMAIL = 'email';
-    case SMS = 'sms';
-    case PUSH = 'push';
+    private function __construct(
+        private ?BuiltInChannel $builtIn,
+        private ?string $custom,
+    ) {}
 
-    public function isEmail(): bool
+    public static function builtIn(BuiltInChannel $builtIn): self
     {
-        return $this === self::EMAIL;
+        return new self($builtIn, null);
     }
 
-    public function isSms(): bool
+    public static function custom(string $name): self
     {
-        return $this === self::SMS;
-    }
+        $name = mb_strtolower(mb_trim($name));
 
-    public function isPush(): bool
-    {
-        return $this === self::PUSH;
+        if ($name === '' || mb_strlen($name) > 64) {
+            throw InvariantViolation::because('Custom channel name is invalid.');
+        }
+
+        if (!preg_match('/^[a-z][a-z0-9_\-\.]{0,63}$/', $name)) {
+            throw InvariantViolation::because('Custom channel name contains invalid characters.');
+        }
+
+        return new self(null, $name);
     }
 
     public static function fromString(string $value): self
     {
-        $value = mb_strtolower(trim($value));
+        $value = mb_strtolower(mb_trim($value));
 
-        return match($value) {
-            'email' => self::EMAIL,
-            'sms' => self::SMS,
-            'push' => self::PUSH,
-            default => InvariantViolation::because('Unknown channel.'),
-        };
+        foreach (BuiltInChannel::cases() as $case) {
+            if ($case->value === $value) {
+                return self::builtIn($case);
+            }
+        }
+
+        return self::custom($value);
+    }
+
+    public function isBuiltIn(): bool
+    {
+        return $this->builtIn !== null;
+    }
+
+    public function name(): string
+    {
+        return $this->builtIn?->value ?? $this->custom;
+    }
+
+    public function equals(self $other): bool
+    {
+        return $this->name() === $other->name();
+    }
+
+    public function __toString(): string
+    {
+        return $this->name();
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Template\ValueObject;
 
 use App\Domain\Shared\Exception\InvariantViolation;
+use App\Domain\Shared\Notification\BuiltInChannel;
 use App\Domain\Shared\Notification\Channel;
 
 final readonly class RenderedMessage
@@ -35,7 +36,7 @@ final readonly class RenderedMessage
         }
 
         return new self(
-            Channel::EMAIL,
+            Channel::builtIn(BuiltInChannel::EMAIL),
             $subject,
             $text,
             $html,
@@ -53,7 +54,7 @@ final readonly class RenderedMessage
             throw InvariantViolation::because('Rendered sms text cannot be empty.');
         }
 
-        return new self(Channel::SMS, null, $text, null, null, null, []);
+        return new self(Channel::builtIn(BuiltInChannel::SMS), null, $text, null, null, null, []);
     }
 
     public static function push(?string $title, ?string $body, array $data = []): self
@@ -66,7 +67,7 @@ final readonly class RenderedMessage
             throw InvariantViolation::because('Rendered push notification must have title, body or data.');
         }
 
-        return new self(Channel::PUSH, null, null, null, $title, $body, $data);
+        return new self(Channel::builtIn(BuiltInChannel::PUSH), null, null, null, $title, $body, $data);
     }
 
     public function channel(): Channel

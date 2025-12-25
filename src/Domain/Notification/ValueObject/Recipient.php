@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Notification\ValueObject;
 
 use App\Domain\Shared\Exception\InvariantViolation;
-use App\Domain\Shared\Notification\Channel;
+use App\Domain\Shared\Notification\BuiltInChannel;
 use App\Domain\Shared\Notification\PushTarget;
 
 final readonly class Recipient
@@ -30,7 +30,7 @@ final readonly class Recipient
         return $this->phoneNumber;
     }
 
-    public function pushTaget(): ?PushTarget
+    public function pushTarget(): ?PushTarget
     {
         return $this->pushTarget;
     }
@@ -47,7 +47,7 @@ final readonly class Recipient
 
     public function assertSupports(ChannelSet $channels): void
     {
-        /** @var Channel $channel */
+        /** @var BuiltInChannel $channel */
         foreach ($channels->all() as $channel) {
             if ($channel->isEmail() && $this->email === null) {
                 throw InvariantViolation::because('Recipient email is required for email channel.');

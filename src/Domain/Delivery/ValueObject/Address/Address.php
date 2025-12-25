@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\Delivery\ValueObject\Destination;
+namespace App\Domain\Delivery\ValueObject\Address;
 
 use App\Domain\Shared\Notification\Channel;
 
-interface DestinationInterface
+interface Address
 {
     public function channel(): Channel;
 

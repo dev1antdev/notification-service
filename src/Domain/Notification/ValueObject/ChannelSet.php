@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Notification\ValueObject;
 
 use App\Domain\Shared\Exception\InvariantViolation;
+use App\Domain\Shared\Notification\BuiltInChannel;
 use App\Domain\Shared\Notification\Channel;
 
 final readonly class ChannelSet
@@ -27,7 +28,7 @@ final readonly class ChannelSet
                 throw InvariantViolation::because('ChannelSet must contain only Channel instances.');
             }
 
-            $map[$channel->value] = $channel;
+            $map[$channel->name()] = $channel;
         }
 
         $this->items = $map;
@@ -60,7 +61,7 @@ final readonly class ChannelSet
 
     public function contains(Channel $channel): bool
     {
-        return isset($this->items[$channel->value]);
+        return isset($this->items[$channel->name()]);
     }
 
     public function count(): int
@@ -71,7 +72,7 @@ final readonly class ChannelSet
     public function toStrings(): array
     {
         return array_values(
-            array_map(static fn(Channel $channel) => $channel->value, $this->items),
+            array_map(static fn(Channel $channel) => $channel->name(), $this->items),
         );
     }
 }

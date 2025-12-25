@@ -36,7 +36,7 @@ final readonly class DeliverySucceeded extends AbstractDomainEvent
         return [
             'deliveryId' => $this->deliveryId->toString(),
             'notificationId' => $this->notificationId->toString(),
-            'channel' => $this->channel->value,
+            'channel' => $this->channel->name(),
             'provider' => $this->provider->value(),
         ];
     }

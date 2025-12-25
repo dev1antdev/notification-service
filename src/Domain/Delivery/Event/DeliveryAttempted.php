@@ -44,7 +44,7 @@ final readonly class DeliveryAttempted extends AbstractDomainEvent
         return [
             'deliveryId' => $this->deliveryId->toString(),
             'notificationId' => $this->notificationId->toString(),
-            'channel' => $this->channel->value,
+            'channel' => $this->channel->name(),
             'attemptId' => $this->attemptId->toString(),
             'provider' => $this->provider->value(),
             'status' => $this->status->value,

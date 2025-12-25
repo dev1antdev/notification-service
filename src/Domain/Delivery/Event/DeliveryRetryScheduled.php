@@ -8,10 +8,10 @@ use App\Domain\Delivery\ValueObject\DeliveryId;
 use App\Domain\Delivery\ValueObject\ProviderName;
 use App\Domain\Delivery\ValueObject\RetryPlan;
 use App\Domain\Shared\Event\AbstractDomainEvent;
+use App\Domain\Shared\Identity\AbstractId;
 use App\Domain\Shared\Identity\CorrelationId;
 use App\Domain\Shared\Notification\Channel;
 use App\Domain\Shared\Time\Instant;
-use Symfony\Component\Uid\AbstractUid;
 
 final readonly class DeliveryRetryScheduled extends AbstractDomainEvent
 {
@@ -20,7 +20,7 @@ final readonly class DeliveryRetryScheduled extends AbstractDomainEvent
         Instant $occurredAt,
         ?CorrelationId $correlationId,
         private DeliveryId $deliveryId,
-        private AbstractUid $notificationId,
+        private AbstractId $notificationId,
         private Channel $channel,
         private ProviderName $provider,
         private RetryPlan $retryPlan,
@@ -38,7 +38,7 @@ final readonly class DeliveryRetryScheduled extends AbstractDomainEvent
         return [
             'deliveryId' => $this->deliveryId->toString(),
             'notificationId' => $this->notificationId->toString(),
-            'channel' => $this->channel->value,
+            'channel' => $this->channel->name(),
             'provider' => $this->provider->value(),
             'retryPlan' => $this->retryPlan->toArray(),
         ];

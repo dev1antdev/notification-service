@@ -2,36 +2,37 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\Delivery\ValueObject\Destination;
+namespace App\Domain\Delivery\ValueObject\Address;
 
 use App\Domain\Shared\Exception\InvariantViolation;
+use App\Domain\Shared\Notification\BuiltInChannel;
 use App\Domain\Shared\Notification\Channel;
 
-final readonly class EmailDestination implements DestinationInterface
+final readonly class EmailAddress implements Address
 {
     public function __construct(
-        private string $email,
+        private string $to,
     ) {
-        $email = mb_trim($email);
+        $to = mb_trim($to);
 
-        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
             throw InvariantViolation::because('Email is invalid.');
         }
     }
 
-    public function email(): string
+    public function to(): string
     {
-        return $this->email;
+        return $this->to;
     }
 
     public function channel(): Channel
     {
-        return Channel::EMAIL;
+        return Channel::builtIn(BuiltInChannel::EMAIL);
     }
 
     public function toSafeArray(): array
     {
-        $parts = explode('@', $this->email, 2);
+        $parts = explode('@', $this->to, 2);
         $local = $parts[0] ?? '';
         $domain = $parts[1] ?? '';
 

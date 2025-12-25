@@ -12,9 +12,10 @@ use App\Domain\Delivery\Event\DeliveryDispatchStarted;
 use App\Domain\Delivery\Event\DeliveryFailed;
 use App\Domain\Delivery\Event\DeliveryRetryScheduled;
 use App\Domain\Delivery\Event\DeliverySucceeded;
+use App\Domain\Delivery\ValueObject\Address\Address;
 use App\Domain\Delivery\ValueObject\AttemptId;
+use App\Domain\Delivery\ValueObject\Content\DeliveryContent;
 use App\Domain\Delivery\ValueObject\DeliveryId;
-use App\Domain\Delivery\ValueObject\Destination\DestinationInterface;
 use App\Domain\Delivery\ValueObject\ErrorInfo;
 use App\Domain\Delivery\ValueObject\ProviderMessageId;
 use App\Domain\Delivery\ValueObject\ProviderName;
@@ -41,11 +42,20 @@ final class Delivery extends AggregateRoot
         private readonly AbstractId $notificationId,
         private readonly Channel $channel,
         private ProviderName $provider,
-        private DestinationInterface $destination,
+        private readonly Address $address,
+        private readonly DeliveryContent $content,
         private readonly CorrelationId $correlationId,
         private readonly Instant $createdAt,
     ) {
         parent::__construct();
+
+        if (!$address->channel()->equals($channel)) {
+            throw InvariantViolation::because('Address channel does not match channel of delivery.');
+        }
+
+        if (!$content->channel()->equals($channel)) {
+            throw InvariantViolation::because('Content channel does not match channel of delivery.');
+        }
 
         $this->status = DeliveryStatus::PENDING;
     }
@@ -55,7 +65,8 @@ final class Delivery extends AggregateRoot
         AbstractId $notificationId,
         Channel $channel,
         ProviderName $provider,
-        DestinationInterface $destination,
+        Address $address,
+        DeliveryContent $content,
         CorrelationId $correlationId,
         Instant $now,
     ): self {
@@ -64,7 +75,8 @@ final class Delivery extends AggregateRoot
             $notificationId,
             $channel,
             $provider,
-            $destination,
+            $address,
+            $content,
             $correlationId,
             $now,
         );
@@ -271,7 +283,7 @@ final class Delivery extends AggregateRoot
         return $this->id;
     }
 
-    public function notificationId(): NotificationId
+    public function notificationId(): AbstractId
     {
         return $this->notificationId;
     }
@@ -284,6 +296,16 @@ final class Delivery extends AggregateRoot
     public function provider(): ProviderName
     {
         return $this->provider;
+    }
+
+    public function address(): Address
+    {
+        return $this->address;
+    }
+
+    public function content(): DeliveryContent
+    {
+        return $this->content;
     }
 
     public function correlationId(): CorrelationId
