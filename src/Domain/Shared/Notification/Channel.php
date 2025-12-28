@@ -56,6 +56,11 @@ final readonly class Channel
         return $this->builtIn?->value ?? $this->custom;
     }
 
+    public function getBuiltIn(): ?BuiltInChannel
+    {
+        return $this->builtIn;
+    }
+
     public function equals(self $other): bool
     {
         return $this->name() === $other->name();

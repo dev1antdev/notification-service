@@ -1,0 +1,72 @@
+meta {
+  name: Email notification
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{app_host}}/v1/notifications/send-now
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "correlationId": "01J",
+    "recipient": {
+      "email": "john@example.com",
+      "phone": "+48123123123",
+      "pushTarget": {
+        "userId": "u_123",
+        "deviceToken": "fcm_abc"
+      }
+    },
+    "channels": [
+      "email",
+      "sms",
+      "push",
+      "slack"
+    ],
+    "addresses": {
+      "slack": {
+        "channelId": "C012345"
+      }
+    },
+    "content": {
+      "type": "inline",
+      "payloads": {
+        "email": {
+          "format": "html",
+          "subject": "Hi",
+          "body": "<p>Hello</p>"
+        },
+        "sms": {
+          "format": "text",
+          "body": "Hello"
+        },
+        "push": {
+          "format": "json",
+          "data": {
+            "title": "Hi",
+            "body": "Hello",
+            "data": {
+              "k": "v"
+            }
+          }
+        }
+      }
+    },
+    "options": {
+      "dispatch": "async",
+      "contentMode": "snapshot"
+    },
+    "tags": [
+      "onboarding"
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

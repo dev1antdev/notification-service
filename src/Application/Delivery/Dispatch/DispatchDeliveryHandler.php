@@ -8,9 +8,6 @@ use App\Application\Common\Errors\ProviderErrorMapper;
 use App\Application\Common\Mapper\ContentFactory;
 use App\Application\Common\Outbox\OutboxPublisher;
 use App\Application\Common\Transaction\UnitOfWork;
-use App\Application\Ports\Providers\EmailProviderPort;
-use App\Application\Ports\Providers\PushProviderPort;
-use App\Application\Ports\Providers\SmsProviderPort;
 use App\Application\Ports\Senders\SenderRegistry;
 use App\Application\Ports\Template\TemplateRenderer;
 use App\Domain\Delivery\Enum\DeliveryStatus;
@@ -19,11 +16,9 @@ use App\Domain\Delivery\Repository\DeliveryRepository;
 use App\Domain\Delivery\ValueObject\Content\SnapshotContent;
 use App\Domain\Delivery\ValueObject\Content\TemplateRefContent;
 use App\Domain\Delivery\ValueObject\DeliveryId;
-use App\Domain\Delivery\ValueObject\Destination\DestinationInterface;
-use App\Domain\Delivery\ValueObject\ProviderMessageId;
-use App\Domain\Shared\Notification\BuiltInChannel;
 use App\Domain\Shared\Time\ClockInterface;
 use App\Domain\Shared\ValueObject\JsonObject;
+use Throwable;
 
 final readonly class DispatchDeliveryHandler
 {
@@ -71,7 +66,7 @@ final readonly class DispatchDeliveryHandler
 
                 $providerMessageId = $sender->send($delivery->address(), $content);
                 $delivery->attemptSucceeded($attemptId, $providerMessageId, $now);
-            } catch (\Throwable $exception) {
+            } catch (Throwable $exception) {
                 $error = $this->errorMapper->map($exception);
 
                 $attemptNumber = $delivery->attemptCount();

@@ -6,7 +6,6 @@ namespace App\Application\Notification\SendNow;
 
 use App\Application\Common\Mapper\AddressFactory;
 use App\Application\Common\Mapper\ContentFactory;
-use App\Application\Common\Mapper\DestinationFactory;
 use App\Application\Common\Outbox\OutboxPublisher;
 use App\Application\Common\Transaction\UnitOfWork;
 use App\Application\Ports\Persistence\IdempotencyStore;
@@ -17,6 +16,7 @@ use App\Domain\Delivery\ValueObject\DeliveryId;
 use App\Domain\Notification\Entity\Notification;
 use App\Domain\Notification\Repository\NotificationRepository;
 use App\Domain\Notification\ValueObject\NotificationId;
+use App\Domain\Shared\Notification\Channel;
 use App\Domain\Shared\Time\ClockInterface;
 
 final readonly class SendNowHandler
@@ -67,8 +67,12 @@ final readonly class SendNowHandler
 
             $deliveryIds = [];
 
+            /**
+             * @var Channel $channel
+             */
             foreach ($command->channels->all() as $channel) {
-                $address = $this->addressFactory->fromRecipient($channel, $command->recipient);
+                $customPayload = $command->addresses[$channel->name()] ?? null;
+                $address = $this->addressFactory->fromRecipient($channel, $command->recipient, $customPayload);
                 $provider = $this->routingPolicy->chooseProvider($channel, $address);
                 $content = $this->contentFactory->build($channel, $command->content);
 

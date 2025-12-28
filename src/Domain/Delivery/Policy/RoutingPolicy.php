@@ -6,9 +6,9 @@ namespace App\Domain\Delivery\Policy;
 
 use App\Domain\Delivery\ValueObject\Address\Address;
 use App\Domain\Delivery\ValueObject\ProviderName;
-use App\Domain\Shared\Notification\BuiltInChannel;
+use App\Domain\Shared\Notification\Channel;
 
 interface RoutingPolicy
 {
-    public function chooseProvider(BuiltInChannel $channel, Address $address): ProviderName;
+    public function chooseProvider(Channel $channel, Address $address): ProviderName;
 }
