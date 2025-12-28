@@ -9,7 +9,7 @@ use App\Domain\Shared\Exception\InvariantViolation;
 final readonly class Tags
 {
     /**
-     * @var array<string, string>
+     * @var string[]
      */
     private array $tags;
 
@@ -17,21 +17,12 @@ final readonly class Tags
     {
         $normalized = [];
 
-        foreach ($tags as $k => $v) {
-            if (!is_string($k) || mb_trim($k) === '') {
-                throw InvariantViolation::because('Tag key must be a non-empty string.');
+        foreach (array_values($tags) as $key => $tag) {
+            if (!is_string($tag) || mb_trim($tag) === '') {
+                throw InvariantViolation::because("Tag value for '{$key}' must be a non-empty string.");
             }
 
-            if (!is_string($v) || mb_trim($v) === '') {
-                throw InvariantViolation::because("Tag value for '{$k}' must be a non-empty string.");
-            }
-
-            $key = mb_trim($k);
-            $value = mb_trim($v);
-
-            if (!preg_match('/^[A-Za-z0-9:_\-.]{1,64}$/', $key)) {
-                throw InvariantViolation::because("Invalid tag key: {$key}");
-            }
+            $value = mb_trim($tag);
 
             if (mb_strlen($value) > 256) {
                 throw InvariantViolation::because("Tag value too long for key: {$key}");
@@ -53,12 +44,12 @@ final readonly class Tags
         return $this->tags;
     }
 
-    public function get(string $key, ?string $default = null): ?string
+    public function get(int $key, ?string $default = null): ?string
     {
         return $this->tags[$key] ?? $default;
     }
 
-    public function has(string $key): bool
+    public function has(int $key): bool
     {
         return array_key_exists($key, $this->tags);
     }

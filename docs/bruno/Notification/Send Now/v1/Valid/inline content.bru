@@ -1,0 +1,47 @@
+meta {
+  name: inline content
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{app_host}}/v1/notifications/send-now
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "recipient": {
+      "email": "john@example.com",
+      "phone": "+48123123123"
+    },
+    "channels": [
+      "email",
+      "sms"
+    ],
+    "content": {
+      "type": "inline",
+      "payloads": {
+        "email": {
+          "format": "html",
+          "subject": "Hello",
+          "body": "<p>Hi!</p>"
+        },
+        "sms": {
+          "format": "text",
+          "body": "Hi!"
+        }
+      }
+    },
+    "options": {
+      "dispatch": "async",
+      "contentMode": "snapshot"
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

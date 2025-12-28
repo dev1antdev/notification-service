@@ -10,7 +10,5 @@ final readonly class Recipient
         public ?string $email = null,
         public ?string $phone = null,
         public ?PushTarget $pushTarget = null,
-    )
-    {
-    }
+    ) {}
 }

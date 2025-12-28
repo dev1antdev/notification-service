@@ -10,13 +10,13 @@ final readonly class TemplateRef
 {
     private function __construct(
         private string $templateId,
-        private ?string $version,
+        private ?int $version,
         private ?string $locale,
     ) {}
 
     public static function create(
         string $templateId,
-        ?string $version = null,
+        ?int $version = null,
         ?string $locale = null,
     ): self {
         $templateId = mb_trim($templateId);
@@ -25,12 +25,8 @@ final readonly class TemplateRef
             throw InvariantViolation::because('TemplateId is invalid.');
         }
 
-        if ($version !== null) {
-            $version = mb_trim($version);
-
-            if ($version === '' || mb_strlen($version) > 64) {
-                throw InvariantViolation::because('Template version is invalid.');
-            }
+        if ($version !== null && $version <= 0) {
+            throw InvariantViolation::because('Template version is invalid.');
         }
 
         if ($locale !== null) {
@@ -49,7 +45,7 @@ final readonly class TemplateRef
         return $this->templateId;
     }
 
-    public function version(): ?string
+    public function version(): ?int
     {
         return $this->version;
     }

@@ -1,0 +1,44 @@
+meta {
+  name: template content
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{app_host}}/v1/notifications/send-now
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "recipient": {
+      "email": "john@example.com"
+    },
+    "channels": [
+      "slack"
+    ],
+    "addresses": {
+      "slack": {
+        "channelId": "C012345"
+      }
+    },
+    "content": {
+      "type": "template",
+      "templateRef": {
+        "templateId": "{{$randomUUID}}",
+        "version": 2,
+        "locale": "en-US"
+      },
+      "variables": {
+        "orderId": "ORD-1",
+        "status": "PAID"
+      }
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
