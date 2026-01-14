@@ -1,0 +1,22 @@
+providers:
+    email:
+        smtp:
+            dsn: '%env(MAILER_DSN)%'
+    sms:
+        twilio:
+            account_sid: '%env(TWILIO_ACCOUNT_SID)%'
+            auth_token: '%env(TWILIO_AUTH_TOKEN)%'
+            from: '%env(TWILIO_FROM)%'
+            messaging_service_sid: '%env(default::TWILIO_MESSAGING_SERVICE_SID)%'
+            timeout_seconds: 5
+        nexmo:
+            api_key: '%env(NEXMO_API_KEY)%'
+            api_secret: '%env(NEXMO_API_SECRET)%'
+            from: 'MyApp'
+            timeout_seconds: 5
+    push:
+        fcm:
+            credentials_json: '%env(FCM_CREDENTIALS_JSON)%'
+    webhook:
+        http:
+            base_url: '%env(WEBHOOK_BASE_URL)%'

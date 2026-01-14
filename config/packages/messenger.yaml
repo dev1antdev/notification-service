@@ -1,0 +1,38 @@
+framework:
+    messenger:
+        default_bus: command.bus
+        buses:
+            command.bus: ~
+            event.bus: ~
+            query.bus: ~
+        failure_transport: failed
+        transports:
+            sync: 'sync://'
+            failed: 'doctrine://default?queue_name=failed'
+            outbox_transport:
+                dsn: '%env(MESSENGER_OUTBOX_TRANSPORT_DSN)%'
+                options:
+                    consumer: 'outbox_consumer'
+            deliveries_transport:
+                dsn: '%env(MESSENGER_DELIVERIES_TRANSPORT_DSN)%'
+                options:
+                    retry: 0
+                    exchange:
+                        name: 'deliveries'
+                        type: 'direct'
+                        default_publish_routing_key: 'dispatch'
+                    queues:
+                        deliveries_dispatch:
+                            binding_keys: ['dispatch']
+
+        routing:
+            App\Infrastructure\Outbox\Messenger\OutboxEventMessage: outbox_transport
+            App\Application\Delivery\Dispatch\DispatchDeliveryCommand: deliveries_transport
+
+# when@test:
+#    framework:
+#        messenger:
+#            transports:
+#                # replace with your transport name here (e.g., my_transport: 'in-memory://')
+#                # For more Messenger testing tools, see https://github.com/zenstruck/messenger-test
+#                async: 'in-memory://'

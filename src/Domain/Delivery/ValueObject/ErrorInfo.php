@@ -8,7 +8,7 @@ use App\Domain\Shared\Exception\InvariantViolation;
 
 final readonly class ErrorInfo
 {
-    private function __construct(
+    public function __construct(
         private string $code,
         private string $message,
         private bool $isTransient,

@@ -39,6 +39,7 @@ final class Notification extends AggregateRoot
         private ?Schedule $schedule,
         private readonly Tags $tags,
         private readonly Instant $createdAt,
+        private Instant $updatedAt,
     ) {
         parent::__construct();
 
@@ -67,6 +68,37 @@ final class Notification extends AggregateRoot
                 )
             );
         }
+    }
+
+    public static function rehydrate(
+        NotificationId $id,
+        Recipient $recipient,
+        ChannelSet $channels,
+        NotificationContent $content,
+        CorrelationId $correlationId,
+        ?IdempotencyKey $idempotencyKey,
+        ?Schedule $schedule,
+        Tags $tags,
+        NotificationStatus $status,
+        Instant $createdAt,
+        Instant $updatedAt,
+    ): self {
+        $self = new self(
+            $id,
+            $recipient,
+            $channels,
+            $content,
+            $correlationId,
+            $idempotencyKey,
+            $schedule,
+            $tags,
+            $createdAt,
+            $updatedAt,
+        );
+
+        $self->status = $status;
+
+        return $self;
     }
 
     public static function request(
@@ -100,6 +132,7 @@ final class Notification extends AggregateRoot
             schedule: $schedule,
             tags: $tags,
             createdAt: $createdAt,
+            updatedAt: $createdAt,
         );
     }
 
@@ -113,6 +146,7 @@ final class Notification extends AggregateRoot
 
         $this->schedule = new Schedule($sendAt, $expiresAt);
         $this->status = NotificationStatus::SCHEDULED;
+        $this->updatedAt = $now;
 
         $this->record(
             new NotificationScheduled(
@@ -137,6 +171,7 @@ final class Notification extends AggregateRoot
         }
 
         $this->status = NotificationStatus::CANCELLED;
+        $this->updatedAt = $now;
 
         $this->record(
             new NotificationCancelled(
@@ -154,6 +189,7 @@ final class Notification extends AggregateRoot
         $this->assertNotFinal();
 
         $this->status = NotificationStatus::EXPIRED;
+        $this->updatedAt = $now;
 
         $this->record(
             new NotificationExpired(
@@ -208,6 +244,11 @@ final class Notification extends AggregateRoot
     public function createdAt(): Instant
     {
         return $this->createdAt;
+    }
+
+    public function updatedAt(): Instant
+    {
+        return $this->updatedAt;
     }
 
     public function tags(): ?Tags

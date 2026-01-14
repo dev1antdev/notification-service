@@ -50,7 +50,7 @@ final readonly class RetryPlan
     public function toArray(): array
     {
         return [
-            'nextRetryAt' => $this->nextRetryAt,
+            'nextRetryAt' => $this->nextRetryAt->toRfc3339(),
             'attemptNumber' => $this->attemptNumber,
             'maxAttempts' => $this->maxAttempts,
         ];

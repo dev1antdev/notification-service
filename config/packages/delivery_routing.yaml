@@ -1,0 +1,10 @@
+delivery_routing:
+    channels:
+        email:
+            primary: smtp
+        sms:
+            primary: twilio
+        push:
+            primary: fcm
+        webhook:
+            primary: http

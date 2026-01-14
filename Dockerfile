@@ -28,6 +28,7 @@ RUN set -eux; \
         intl \
         xdebug \
         redis \
+        amqp \
     ;
 
 COPY --link docker/frankenphp/conf.d/app.ini $PHP_INI_DIR/conf.d/

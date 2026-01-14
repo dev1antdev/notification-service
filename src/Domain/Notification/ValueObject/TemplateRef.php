@@ -8,7 +8,7 @@ use App\Domain\Shared\Exception\InvariantViolation;
 
 final readonly class TemplateRef
 {
-    private function __construct(
+    public function __construct(
         private string $templateId,
         private ?int $version,
         private ?string $locale,

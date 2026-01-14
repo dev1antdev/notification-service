@@ -16,14 +16,14 @@ use App\Domain\Template\ValueObject\TemplateVersionId;
 final readonly class TemplateVersion
 {
     private function __construct(
-        private TemplateVersionId  $id,
-        private BuiltInChannel     $channel,
-        private Locale             $locale,
-        private RequiredVariables  $requiredVariables,
+        private TemplateVersionId $id,
+        private BuiltInChannel $channel,
+        private Locale $locale,
+        private RequiredVariables $requiredVariables,
         private ?EmailTemplateBody $emailBody,
-        private ?SmsTemplateBody   $smsBody,
-        private ?PushTemplateBody  $pushBody,
-        private int                $versionNumber,
+        private ?SmsTemplateBody $smsBody,
+        private ?PushTemplateBody $pushBody,
+        private int $versionNumber,
     ) {
         $this->assertBodyMatchesChannel();
     }

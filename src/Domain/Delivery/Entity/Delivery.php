@@ -6,7 +6,11 @@ namespace App\Domain\Delivery\Entity;
 
 use App\Domain\Delivery\Enum\AttemptStatus;
 use App\Domain\Delivery\Enum\DeliveryStatus;
-use App\Domain\Delivery\Event\DeliveryAttempted;
+use App\Domain\Delivery\Event\DeliveryAttemptFailed;
+use App\Domain\Delivery\Event\DeliveryAttemptSucceeded;
+use App\Domain\Delivery\Event\DeliveryAttemptStarted;
+use App\Domain\Delivery\Event\DeliveryCancelled;
+use App\Domain\Delivery\Event\DeliveryCreated;
 use App\Domain\Delivery\Event\DeliveryDeadLettered;
 use App\Domain\Delivery\Event\DeliveryDispatchStarted;
 use App\Domain\Delivery\Event\DeliveryFailed;
@@ -33,9 +37,11 @@ final class Delivery extends AggregateRoot
     private DeliveryStatus $status;
     private ?ErrorInfo $lastError = null;
     private ?RetryPlan $retryPlan = null;
-
-    /** @var DeliveryAttempt[] */
-    private array $attempts = [];
+    private ?Instant $nextRetryAt = null;
+    private ?Instant $deadLetteredAt = null;
+    private ?ProviderMessageId $providerMessageId = null;
+    private int $attemptCount = 0;
+    private int $version = 0;
 
     private function __construct(
         private readonly DeliveryId $id,
@@ -46,6 +52,7 @@ final class Delivery extends AggregateRoot
         private readonly DeliveryContent $content,
         private readonly CorrelationId $correlationId,
         private readonly Instant $createdAt,
+        private Instant $updatedAt,
     ) {
         parent::__construct();
 
@@ -60,6 +67,45 @@ final class Delivery extends AggregateRoot
         $this->status = DeliveryStatus::PENDING;
     }
 
+    public static function rehydrate(
+        DeliveryId $id,
+        AbstractId $notificationId,
+        Channel $channel,
+        ProviderName $provider,
+        Address $address,
+        DeliveryContent $content,
+        CorrelationId $correlationId,
+        Instant $createdAt,
+        Instant $updatedAt,
+        DeliveryStatus $status,
+        ?ErrorInfo $lastError,
+        ?Instant $nextRetryAt,
+        ?Instant $deadLetteredAt,
+        ?ProviderMessageId $providerMessageId,
+        int $version,
+    ): self {
+        $self = new self(
+            id: $id,
+            notificationId: $notificationId,
+            channel: $channel,
+            provider: $provider,
+            address: $address,
+            content: $content,
+            correlationId: $correlationId,
+            createdAt: $createdAt,
+            updatedAt: $updatedAt,
+        );
+
+        $self->status = $status;
+        $self->lastError = $lastError;
+        $self->nextRetryAt = $nextRetryAt;
+        $self->deadLetteredAt = $deadLetteredAt;
+        $self->providerMessageId = $providerMessageId;
+        $self->version = $version;
+
+        return $self;
+    }
+
     public static function create(
         DeliveryId $id,
         AbstractId $notificationId,
@@ -70,7 +116,7 @@ final class Delivery extends AggregateRoot
         CorrelationId $correlationId,
         Instant $now,
     ): self {
-        return new self(
+        $delivery = new self(
             $id,
             $notificationId,
             $channel,
@@ -79,7 +125,20 @@ final class Delivery extends AggregateRoot
             $content,
             $correlationId,
             $now,
+            $now,
         );
+
+        $delivery->record(
+            new DeliveryCreated(
+                eventId: Uuid::v4()->toRfc4122(),
+                occurredAt: $now,
+                correlationId: $correlationId,
+                deliveryId: $id,
+                notificationId: $notificationId,
+            ),
+        );
+
+        return $delivery;
     }
 
     public function startDispatch(Instant $now): void
@@ -91,6 +150,7 @@ final class Delivery extends AggregateRoot
         }
 
         $this->status = DeliveryStatus::DISPATCHING;
+        $this->updatedAt = $now;
 
         $this->record(
             new DeliveryDispatchStarted(
@@ -111,27 +171,36 @@ final class Delivery extends AggregateRoot
             throw InvariantViolation::because('Can begin attempt only while DISPATCHING');
         }
 
+        $this->updatedAt = $now;
+        $this->attemptCount++;
+
         $attemptId = AttemptId::new();
-        $attempt = DeliveryAttempt::start($attemptId, $this->provider, $now);
 
-        $this->attempts[] = $attempt;
-
-        // TODO: add DeliveryAttemptStarted event
+        $this->record(
+            new DeliveryAttemptStarted(
+                eventId: Uuid::v4()->toRfc4122(),
+                occurredAt: $now,
+                correlationId: $this->correlationId,
+                deliveryId: $this->id,
+                notificationId: $this->notificationId,
+                attemptId: $attemptId,
+            ),
+        );
 
         return $attemptId;
     }
 
     public function attemptSucceeded(AttemptId $attemptId, ProviderMessageId $providerMessageId, Instant $now): void
     {
-        $attempt = $this->findAttempt($attemptId);
-        $attempt->succeed($providerMessageId, $now);
-
         $this->status = DeliveryStatus::SENT;
+        $this->providerMessageId = $providerMessageId;
         $this->lastError = null;
         $this->retryPlan = null;
+        $this->nextRetryAt = null;
+        $this->updatedAt = $now;
 
         $this->record(
-            new DeliveryAttempted(
+            new DeliveryAttemptSucceeded(
                 eventId: Uuid::v4()->toRfc4122(),
                 occurredAt: $now,
                 correlationId: $this->correlationId,
@@ -140,7 +209,6 @@ final class Delivery extends AggregateRoot
                 channel: $this->channel,
                 attemptId: $attemptId,
                 provider: $this->provider,
-                status: AttemptStatus::SUCCEEDED,
                 providerMessageId: $providerMessageId,
                 error: null,
             )
@@ -161,30 +229,24 @@ final class Delivery extends AggregateRoot
 
     public function attemptFailed(AttemptId $attemptId, ErrorInfo $error, Instant $now, ?RetryPlan $retryPlan): void
     {
-        $attempt = $this->findAttempt($attemptId);
-        $attempt->fail($error, $now);
-
         $this->lastError = $error;
         $this->retryPlan = $retryPlan;
+        $this->updatedAt = $now;
 
         $this->record(
-            new DeliveryAttempted(
+            new DeliveryAttemptFailed(
                 eventId: Uuid::v4()->toRfc4122(),
                 occurredAt: $now,
                 correlationId: $this->correlationId,
                 deliveryId: $this->id,
                 notificationId: $this->notificationId,
-                channel: $this->channel,
                 attemptId: $attemptId,
-                provider: $this->provider,
-                status: AttemptStatus::FAILED,
-                providerMessageId: null,
-                error: $error,
             )
         );
 
         if ($retryPlan !== null) {
             $this->status = DeliveryStatus::RETRYING;
+            $this->nextRetryAt = $retryPlan->nextRetryAt();
 
             $this->record(
                 new DeliveryFailed(
@@ -214,6 +276,8 @@ final class Delivery extends AggregateRoot
             );
         } else {
             $this->status = DeliveryStatus::FAILED;
+            $this->nextRetryAt = null;
+            $this->deadLetteredAt = $now;
 
             $this->record(
                 new DeliveryFailed(
@@ -261,7 +325,15 @@ final class Delivery extends AggregateRoot
 
         $this->status = DeliveryStatus::CANCELLED;
 
-        // TODO: add DeliveryCancelled event
+        $this->record(
+            new DeliveryCancelled(
+                eventId: Uuid::v4()->toRfc4122(),
+                occurredAt: $now,
+                correlationId: $this->correlationId,
+                deliveryId: $this->id,
+                notificationId: $this->notificationId,
+            )
+        );
     }
 
     public function isRetryDue(Instant $now): bool
@@ -275,7 +347,7 @@ final class Delivery extends AggregateRoot
 
     public function attemptCount(): int
     {
-        return count($this->attempts);
+        return $this->attemptCount;
     }
 
     public function id(): DeliveryId
@@ -333,9 +405,29 @@ final class Delivery extends AggregateRoot
         return $this->retryPlan;
     }
 
-    public function attempts(): array
+    public function nextRetryAt(): ?Instant
     {
-        return $this->attempts;
+        return $this->nextRetryAt;
+    }
+
+    public function deadLetteredAt(): ?Instant
+    {
+        return $this->deadLetteredAt;
+    }
+
+    public function updatedAt(): Instant
+    {
+        return $this->updatedAt;
+    }
+
+    public function providerMessageId(): ?ProviderMessageId
+    {
+        return $this->providerMessageId;
+    }
+
+    public function version(): int
+    {
+        return $this->version;
     }
 
     private function assertNotFinal(): void
@@ -343,16 +435,5 @@ final class Delivery extends AggregateRoot
         if (in_array($this->status, [DeliveryStatus::SENT, DeliveryStatus::FAILED, DeliveryStatus::CANCELLED], true)) {
             throw InvariantViolation::because('Delivery cannot be modified after it has been sent, failed, or cancelled.');
         }
-    }
-
-    private function findAttempt(AttemptId $attemptId): DeliveryAttempt
-    {
-        foreach ($this->attempts as $attempt) {
-            if ($attempt->id()->equals($attemptId)) {
-                return $attempt;
-            }
-        }
-
-        throw InvariantViolation::because('Attempt not found.');
     }
 }

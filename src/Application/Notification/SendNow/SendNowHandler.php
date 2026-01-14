@@ -18,7 +18,9 @@ use App\Domain\Notification\Repository\NotificationRepository;
 use App\Domain\Notification\ValueObject\NotificationId;
 use App\Domain\Shared\Notification\Channel;
 use App\Domain\Shared\Time\ClockInterface;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
+#[AsMessageHandler(bus: 'command.bus')]
 final readonly class SendNowHandler
 {
     public function __construct(
@@ -80,7 +82,7 @@ final readonly class SendNowHandler
                     id: DeliveryId::new(),
                     notificationId: $notification->id(),
                     channel: $channel,
-                    provider: $provider,
+                    provider: $provider->provider(),
                     address: $address,
                     content: $content,
                     correlationId: $command->correlationId,

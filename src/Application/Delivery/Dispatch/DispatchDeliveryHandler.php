@@ -50,6 +50,7 @@ final readonly class DispatchDeliveryHandler
             }
 
             $delivery->startDispatch($now);
+
             $attemptId = $delivery->beginAttempt($now);
 
             try {

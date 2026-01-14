@@ -11,7 +11,7 @@ final readonly class PushTarget
     private const int MAX_DEVICE_TOKEN_LENGTH = 4096;
     private const int MAX_USER_ID_LENGTH = 255;
 
-    private function __construct(
+    public function __construct(
         private ?string $deviceToken,
         private ?string $userId,
     ) {}
